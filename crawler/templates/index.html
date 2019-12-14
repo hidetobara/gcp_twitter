@@ -1,15 +1,25 @@
 {% extends "layout.html" %}
 {% block content %}
+<div class="mx-auto col-10">
 
-<div class="card">
-    <h5 class="card-header">最近のツイート</h5>
-    <div class="card-body">
-    {% for tweet in tweets %}
-        {{ tweet['at_created'] }} {{ tweet['screen_name'] }} {{ tweet['text'] }} <br />
-    {% endfor %}
+    <div class="card">
+        <h5 class="card-header">最近のツイート</h5>
+        <div class="card-body">
+            <table class="table">
+            {% for tweet in tweets %}
+                <tr><td>{{ tweet['at_created'] }}</td><td>{{ tweet['screen_name'] }}</td><td>{{ tweet['text'] }}</td></tr>
+            {% endfor %}
+            </table>
+        </div>
     </div>
+
+    <div class="card">
+        <h5 class="card-header">リンク</h5>
+        <div class="card-body">
+            <a href="/status">ステータス</a><br/>
+            <a href="/update.json">更新</a><br/>
+        </div>
+    </div>    
+
 </div>
-
-
-
 {% endblock %}

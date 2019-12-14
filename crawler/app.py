@@ -14,21 +14,32 @@ def strd(dt):
 
 @app.route('/')
 def get_index():
-    context = {"title":"ツイート"}
-
     bq = json.load(open('./private/bigquery.json', 'r'))
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
-    client = bigquery.Client()
-    sql = "SELECT at_created,screen_name,`text` FROM `{}` WHERE at_created > '{}' ORDER BY at_created DESC LIMIT 10".format(bq["table"], strd(days3))
+    sql = "SELECT at_created,screen_name,`text` FROM `{}` WHERE at_created > '{}' ORDER BY at_created DESC LIMIT 30".format(bq["table"], strd(days3))
     print("sql=", sql)
     tweets = []
-    for row in client.query(sql).result():
+    for row in bigquery.Client().query(sql).result():
         tweets.append( {'at_created':strdt(row['at_created']), 'screen_name':row['screen_name'], 'text':row['text']} )
-    context['tweets'] = tweets
+    context = { 'title':"Current tweets.", 'tweets': tweets }
     return render_template('index.html', **context)
+
+@app.route('/status')
+def get_status():
+    bq = json.load(open('./private/bigquery.json', 'r'))
+    days3 = datetime.datetime.now() - datetime.timedelta(days=3)
+    sql = "SELECT FORMAT_DATETIME('%H', `at_created`) as hours, COUNT(*) as cnt FROM `{}` WHERE `at_created` > '{}' GROUP BY hours ORDER BY hours".format(bq["table"], strd(days3))
+    print("sql=", sql)
+    client = bigquery.Client()
+    rates = []
+    for row in client.query(sql).result():
+        rates.append(row)
+    context = { 'title':"Status", 'rates_of_tweets':rates }
+    return render_template('status.html', **context)
 
 @app.route('/update.json')
 def get_update():
+    LIMIT = 200
     account = json.load(open('./private/hidetobara.json', 'r'))
     bq = json.load(open('./private/bigquery.json', 'r'))
 
@@ -41,11 +52,12 @@ def get_update():
         max_id = 0 if row['max_id'] is None else row['max_id']
 
     api = twitter.Api(**account)
-    statuses = api.GetHomeTimeline(count=30,exclude_replies=True)
+    statuses = api.GetHomeTimeline(count=LIMIT,exclude_replies=True)
     rows = []
     for s in statuses:
         if s.id <= max_id: continue
         at_created = datetime.datetime.strptime(s.created_at, "%a %b %d %H:%M:%S +0000 %Y")
+        at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
         at_created_date = at_created.date()
         rows.append({"id":s.id, "screen_name":s.user.screen_name, "text":s.text, "at_created":strdt(at_created), "at_created_date":strd(at_created_date)})
 
@@ -55,7 +67,7 @@ def get_update():
         table = client.get_table(table_ref)
         client.insert_rows_json(table, rows)
 
-    return jsonify({'result':'ok', 'max_id':max_id, 'count':len(rows)})
+    return jsonify({'result':'ok', 'max_id':max_id, 'count':len(rows), 'limit':LIMIT})
 
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0',port=8080)
