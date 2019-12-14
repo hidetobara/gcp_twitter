@@ -16,7 +16,7 @@ def strd(dt):
 def get_index():
     bq = json.load(open('./private/bigquery.json', 'r'))
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
-    sql = "SELECT at_created,screen_name,`text` FROM `{}` WHERE at_created > '{}' ORDER BY at_created DESC LIMIT 30".format(bq["table"], strd(days3))
+    sql = "SELECT at_created,screen_name,`text` FROM `{}` WHERE `at_created_date` > '{}' ORDER BY at_created DESC LIMIT 30".format(bq["table"], strd(days3))
     print("sql=", sql)
     tweets = []
     for row in bigquery.Client().query(sql).result():
@@ -28,7 +28,7 @@ def get_index():
 def get_status():
     bq = json.load(open('./private/bigquery.json', 'r'))
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
-    sql = "SELECT FORMAT_DATETIME('%H', `at_created`) as hours, COUNT(*) as cnt FROM `{}` WHERE `at_created` > '{}' GROUP BY hours ORDER BY hours".format(bq["table"], strd(days3))
+    sql = "SELECT FORMAT_DATETIME('%H', `at_created`) as hours, COUNT(*) as cnt FROM `{}` WHERE `at_created_date` > '{}' GROUP BY hours ORDER BY hours".format(bq["table"], strd(days3))
     print("sql=", sql)
     client = bigquery.Client()
     rates = []
@@ -45,7 +45,7 @@ def get_update():
 
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
     client = bigquery.Client()
-    sql = "SELECT MAX(`id`) as max_id FROM `{}` WHERE at_created > '{}'".format(bq["table"], strd(days3))
+    sql = "SELECT MAX(`id`) as max_id FROM `{}` WHERE at_created_date > '{}'".format(bq["table"], strd(days3))
     print("sql=", sql)
     max_id = 0
     for row in client.query(sql).result():
