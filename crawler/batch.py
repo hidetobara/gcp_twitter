@@ -4,7 +4,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './private/twitter-261302-f4efec3
 from google.cloud import bigquery
 import twitter
 
-from tool import strdt, strd, strpt
+from tool import strdt, strd, strpt, insert_rows
 
 def upload_to_bq():
     client = bigquery.Client()
@@ -27,10 +27,10 @@ def upload_to_bq():
                 print("min_id exceed tid=", tid)
                 break
             rows.append( {"id":tid, "screen_name":screen_name, "text":text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date), } )
-            if len(rows) >= 1000:
+            if len(rows) >= 5000:
+                print("tid=", tid)
                 insert_rows(client, rows)
                 rows = []
-                break
         insert_rows(client, rows)
             
 if __name__ == "__main__":

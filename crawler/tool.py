@@ -14,4 +14,4 @@ def insert_rows(client, rows, name="my_timeline"):
     table_ref = dataset_ref.table(name)
     table = client.get_table(table_ref)
     r = client.insert_rows_json(table, rows)
-    print("insert_logs=", r)
+    print("insert_logs=", r, "table=", name)
