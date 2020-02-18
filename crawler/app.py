@@ -4,14 +4,15 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './private/twitter-261302-f4efec35fd83.json'
 from google.cloud import bigquery
 import twitter
-from tool import strdt, strd, strpt, insert_rows
+from tool import strdt, strd, strpt
+import Manager
 
 
 app = Flask(__name__)
 
 @app.route('/')
 def get_index():
-    bq = json.load(open('./private/bigquery.json', 'r'))
+    bq = json.load(open('./private/production.json', 'r'))
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
     sql = "SELECT at_created,screen_name,`text` FROM `{}` WHERE `by_year_month` >= {} ORDER BY at_created DESC LIMIT 30".format(bq["table"], strpt(days3))
     print("sql=", sql)
@@ -23,7 +24,7 @@ def get_index():
 
 @app.route('/status')
 def get_status():
-    bq = json.load(open('./private/bigquery.json', 'r'))
+    bq = json.load(open('./private/production.json', 'r'))
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
     sql = "SELECT FORMAT_DATETIME('%H', `at_created`) as hours, COUNT(*) as cnt FROM `{}` WHERE `at_created` > '{}' AND `by_year_month` >= {} GROUP BY hours ORDER BY hours".format(bq["table"], strd(days3), strpt(days3))
     print("sql=", sql)
@@ -36,30 +37,13 @@ def get_status():
 
 @app.route('/update.json')
 def get_update():
-    LIMIT = 200
-    account = json.load(open('./private/hidetobara.json', 'r'))
-    bq = json.load(open('./private/bigquery.json', 'r'))
+    m = Manager.Manager('./private/production.json')
+    rows = m.get_timeline()
+    m.insert_rows_origin(rows)
+    items = m.decompose(rows)
+    m.insert_rows_morphological(items)
 
-    days3 = datetime.datetime.now() - datetime.timedelta(days=3)
-    client = bigquery.Client()
-    sql = "SELECT MAX(`id`) as max_id FROM `{}` WHERE by_year_month >= {}".format(bq["table"], strpt(days3))
-    print("sql=", sql)
-    max_id = 0
-    for row in client.query(sql).result():
-        max_id = 0 if row['max_id'] is None else row['max_id']
-
-    api = twitter.Api(**account)
-    statuses = api.GetHomeTimeline(count=LIMIT,exclude_replies=True)
-    rows = []
-    for s in statuses:
-        if s.id <= max_id: continue
-        at_created = datetime.datetime.strptime(s.created_at, "%a %b %d %H:%M:%S +0000 %Y")
-        at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
-        at_created_date = at_created.date()
-        rows.append({"id":s.id, "screen_name":s.user.screen_name, "text":s.text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)})
-    insert_rows(client, rows)
-
-    return jsonify({'result':'ok', 'max_id':max_id, 'count':len(rows), 'limit':LIMIT})
+    return jsonify({'result':'ok', 'max_id':m.max_id, 'count':len(rows)})
 
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0',port=8080)

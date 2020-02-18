@@ -3,5 +3,6 @@
 README.md
 
 __pycache__
+data
 
 *.out
