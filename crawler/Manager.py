@@ -40,8 +40,8 @@ class Manager:
         print("insert_logs=", r, "table=", table_name)
     def insert_rows_origin(self, rows):
         self.insert_rows(rows, self.opt["table"])
-    def insert_rows_morphological(self, rows):
-        self.insert_rows(rows, self.opt["morphological_table"])
+    def insert_rows_trend(self, rows):
+        self.insert_rows(rows, self.opt["trend_table"])
 
     def get_timeline(self):
         LIMIT = 30
@@ -63,6 +63,16 @@ class Manager:
             rows.append({"id":s.id, "screen_name":s.user.screen_name, "text":s.text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)})
         return rows
 
+    def get_trends(self):
+        statuses = self.tw_api.GetTrendsWoeid(23424856)
+        rows = []
+        for s in statuses:
+            at_created = datetime.datetime.strptime(s.timestamp, "%Y-%m-%dT%H:%M:%SZ")
+            at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
+            rows.append({ "name":s.name, "volume":s.tweet_volume, "at_created":strdt(at_created) })
+        return rows
+
+    # 形態素解析する、いったんは使わない
     def decompose(self, rows):
         items = []
         for r in rows:

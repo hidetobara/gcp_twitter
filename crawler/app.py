@@ -40,10 +40,11 @@ def get_update():
     m = Manager.Manager('./private/production.json')
     rows = m.get_timeline()
     m.insert_rows_origin(rows)
-    items = m.decompose(rows)
-    m.insert_rows_morphological(items)
 
-    return jsonify({'result':'ok', 'max_id':m.max_id, 'count':len(rows)})
+    trends = m.get_trends()
+    m.insert_rows_trend(trends)
+
+    return jsonify({'result':'ok', 'max_id':m.max_id, 'rows':len(rows), 'trends':len(trends)})
 
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0',port=8080)
