@@ -9,17 +9,24 @@ import Manager
 
 
 app = Flask(__name__)
+m = Manager.Manager('./private/production.json')
 
 @app.route('/')
 def get_index():
-    m = Manager.Manager('./private/production.json')
     tweets = m.get_timeline()
 
     context = { 'title':"Current tweets.", 'tweets': tweets }
     return render_template('index.html', **context)
 
-@app.route('/status')
-def get_status():
+@app.route('/status', methods=['POST'])
+def post_status():
+    if request.method == 'POST':
+        text = request.form['content']
+        m.post_status(text)
+    return redirect('/')
+
+@app.route('/info', methods=['GET'])
+def get_info():
     bq = json.load(open('./private/production.json', 'r'))
     days3 = datetime.datetime.now() - datetime.timedelta(days=3)
     client = bigquery.Client()
@@ -41,7 +48,6 @@ def get_status():
 
 @app.route('/update.json')
 def get_update():
-    m = Manager.Manager('./private/production.json')
     rows = m.get_timeline(max_id=m.get_max_id())
     m.insert_rows_origin(m.filter_for_bq_timeline(rows))
 

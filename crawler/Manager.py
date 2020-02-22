@@ -50,6 +50,9 @@ class Manager:
             items.append(item)
         return items
 
+    def post_status(self, text):
+        self.tw_api.PostUpdate(text)
+
     def get_max_id(self):
         days3 = datetime.datetime.now() - datetime.timedelta(days=3)
         sql = "SELECT MAX(`id`) as max_id FROM `{}` WHERE by_year_month >= {}".format(self.opt["table"], strpt(days3))
@@ -69,7 +72,7 @@ class Manager:
             at_created = datetime.datetime.strptime(s.created_at, "%a %b %d %H:%M:%S +0000 %Y")
             at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
             at_created_date = at_created.date()
-            row = {"id":s.id, "screen_name":s.user.screen_name, "text":s.text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)}
+            row = {"id":s.id, "screen_name":s.user.screen_name, "name":s.user.name, "text":s.text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)}
             if hasattr(s.user, "profile_image_url"):
                 row["profile_image_url"] = s.user.profile_image_url_https
             if hasattr(s, "media") and type(s.media) is list:
