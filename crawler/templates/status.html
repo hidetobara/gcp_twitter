@@ -13,6 +13,20 @@
             </table>        
         </div>
     </div>
+    <br/>
+
+    <div class="card">
+        <h5 class="card-header">3日くらいの流行</h5>
+        <div class="card-body">
+            <table class="table table-dark">
+            <tr><th>文言</th><th>回数</th></tr>
+            {% for t in trends %}
+                <tr><td>{{ t['name'] }}</td><td>{{ t['_sum'] }} 回</td></tr>
+            {% endfor %}
+            </table>        
+        </div>
+    </div>
+
 
 </div>
 {% endblock %}

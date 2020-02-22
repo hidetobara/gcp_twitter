@@ -22,8 +22,6 @@ class Manager:
 
         self.opt = json.load(open(opt_path, 'r'))
 
-        self.max_id = None
-
     def remove_emoji(self, src_str):
         return ''.join(c for c in src_str if c not in emoji.UNICODE_EMOJI)
 
@@ -42,26 +40,55 @@ class Manager:
         self.insert_rows(rows, self.opt["table"])
     def insert_rows_trend(self, rows):
         self.insert_rows(rows, self.opt["trend_table"])
+    def filter_for_bq_timeline(self, rows):
+        items = []
+        for row in rows:
+            item = {}
+            print(row)
+            for key in ["id", "screen_name", "text", "at_created", "by_year_month"]:
+                item[key] = row[key]
+            items.append(item)
+        return items
 
-    def get_timeline(self):
-        LIMIT = 30
+    def get_max_id(self):
         days3 = datetime.datetime.now() - datetime.timedelta(days=3)
         sql = "SELECT MAX(`id`) as max_id FROM `{}` WHERE by_year_month >= {}".format(self.opt["table"], strpt(days3))
         print("sql=", sql)
         max_id = 0
         for row in self.bq_client.query(sql).result():
             max_id = 0 if row['max_id'] is None else row['max_id']
-        self.max_id = max_id
+        return max_id
+
+    def get_timeline(self, max_id=None):
+        LIMIT = 200
 
         statuses = self.tw_api.GetHomeTimeline(count=LIMIT,exclude_replies=True)
         rows = []
         for s in statuses:
-            if s.id <= max_id: continue
+            if max_id is not None and s.id <= max_id: continue
             at_created = datetime.datetime.strptime(s.created_at, "%a %b %d %H:%M:%S +0000 %Y")
             at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
             at_created_date = at_created.date()
-            rows.append({"id":s.id, "screen_name":s.user.screen_name, "text":s.text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)})
+            row = {"id":s.id, "screen_name":s.user.screen_name, "text":s.text, "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)}
+            if hasattr(s.user, "profile_image_url"):
+                row["profile_image_url"] = s.user.profile_image_url_https
+            if hasattr(s, "media") and type(s.media) is list:
+                row["media_urls"] = []
+                for m in s.media:
+                    if hasattr(m, "media_url_https"):
+                        row["media_urls"].append(m.media_url_https)
+            rows.append(row)
         return rows
+
+    def get_timeline_from_bq(self):
+        bq = json.load(open('./private/production.json', 'r'))
+        days3 = datetime.datetime.now() - datetime.timedelta(days=3)
+        sql = "SELECT at_created,screen_name,`text` FROM `{}` WHERE `by_year_month` >= {} ORDER BY at_created DESC LIMIT 30".format(bq["table"], strpt(days3))
+        print("sql=", sql)
+        tweets = []
+        for row in bigquery.Client().query(sql).result():
+            tweets.append( {'at_created':strdt(row['at_created']), 'screen_name':row['screen_name'], 'text':row['text']} )
+        return tweets
 
     def get_trends(self):
         statuses = self.tw_api.GetTrendsWoeid(23424856)

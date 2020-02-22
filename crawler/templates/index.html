@@ -7,7 +7,15 @@
         <div class="card-body">
             <table class="table">
             {% for tweet in tweets %}
-                <tr><td>{{ tweet['at_created'] }}</td><td>{{ tweet['screen_name'] }}</td><td>{{ tweet['text'] }}</td></tr>
+                <tr>
+                    <td><img src="{{ tweet['profile_image_url'] }}" /></td>
+                    <td><small>{{ tweet['screen_name'] }} {{ tweet['at_created'] }}</small><br />
+                        {{ tweet['text'] }} <br/>
+                        {% for url in tweet['media_urls'] %}
+                            <small><a href="{{ url }}" target="_blank">...{{ url[-16:] }}</a></small>
+                        {% endfor %}
+                    </td>
+                </tr>
             {% endfor %}
             </table>
         </div>
