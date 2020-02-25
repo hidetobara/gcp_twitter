@@ -43,8 +43,8 @@ def get_info():
     for row in client.query(sql).result():
         trends.append(row)
 
-    context = { 'title':"Status", 'rates_of_tweets':rates, 'trends':trends }
-    return render_template('status.html', **context)
+    context = { 'title':"info", 'rates_of_tweets':rates, 'trends':trends }
+    return render_template('info.html', **context)
 
 @app.route('/update.json')
 def get_update():
