@@ -22,7 +22,7 @@
             <table class="table">
             {% for tweet in tweets %}
                 <tr>
-                    <td><img src="{{ tweet['profile_image_url'] }}" /></td>
+                    <td><img src="{{ tweet['profile_image_url'] }}" width="48px" /></td>
                     <td>
                         <small><a target="_blank" href="https://twitter.com/{{ tweet['screen_name'] }}/status/{{ tweet['id'] }}">{{ tweet['name'] }} / {{ tweet['screen_name'] }} / {{ tweet['at_created'] }}</a></small><br />
                         {{ tweet['text'] }} <br/>
