@@ -13,7 +13,8 @@ if __name__ == "__main__":
     m = Manager.Manager("./private/production.json")
     if args.trends:
         for row in m.get_trends():
-            print(row)
+            for s in m.get_search(row['name']):
+                print(s)
     if args.timeline:
         for row in m.get_timeline():
             print(row)

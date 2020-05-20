@@ -7,7 +7,8 @@ docker build -t gcr.io/twitter-261302/crawler .
 gcloud docker -- push gcr.io/twitter-261302/crawler
 
 # reference
-### table
+## table
+### timeline
 [
     {
         "name": "id",
@@ -31,6 +32,54 @@ gcloud docker -- push gcr.io/twitter-261302/crawler
     },
     {
         "name": "by_year_month",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    }
+]
+### trend_samples
+[
+    {
+        "name": "id",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "keyword",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "screen_name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "text",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "at_created",
+        "type": "DATETIME",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "user_description",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "user_at_created",
+        "type": "DATETIME",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "statuses_count",
         "type": "INTEGER",
         "mode": "REQUIRED"
     }

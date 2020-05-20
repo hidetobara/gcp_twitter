@@ -51,10 +51,22 @@ def get_update():
     rows = m.get_timeline(max_id=m.get_max_id())
     m.insert_rows_origin(m.filter_for_bq_timeline(rows))
 
+    return jsonify({'result':'ok', 'rows':len(rows)})
+
+@app.route('/trends.json')
+def get_trends():
     trends = m.get_trends()
     m.insert_rows_trend(trends)
 
-    return jsonify({'result':'ok', 'rows':len(rows), 'trends':len(trends)})
+    count = 0
+    for t in trends:
+        if not t['name'].startswith('#'):
+            continue
+        ss = m.get_search(t['name'])
+        m.insert_rows_sample(ss)
+        count += len(ss)
+
+    return jsonify({'result':'ok', 'samples':count})
 
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0',port=8080)

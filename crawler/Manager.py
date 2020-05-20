@@ -1,4 +1,4 @@
-import sys,os,json,datetime,re,html
+import sys,os,json,datetime,re,html,urllib
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './private/twitter-261302-f4efec35fd83.json'
 from google.cloud import bigquery
@@ -25,6 +25,16 @@ class Manager:
     def remove_emoji(self, src_str):
         return ''.join(c for c in src_str if c not in emoji.UNICODE_EMOJI)
 
+    def parse_status_time(self, txt):
+        created = datetime.datetime.strptime(txt, "%a %b %d %H:%M:%S +0000 %Y")
+        created = created + datetime.timedelta(hours=+9) # japanese timezone
+        return created
+
+    def parse_trend_time(self, txt):
+        created = datetime.datetime.strptime(txt, "%Y-%m-%dT%H:%M:%SZ")
+        created = created + datetime.timedelta(hours=+9) # japanese timezone
+        return created
+
     def insert_rows(self, rows, table_name):
         if len(rows) == 0:
             return
@@ -40,6 +50,8 @@ class Manager:
         self.insert_rows(rows, self.opt["table"])
     def insert_rows_trend(self, rows):
         self.insert_rows(rows, self.opt["trend_table"])
+    def insert_rows_sample(self, rows):
+        self.insert_rows(rows, self.opt["trend_sample_table"])
     def filter_for_bq_timeline(self, rows):
         items = []
         for row in rows:
@@ -69,10 +81,8 @@ class Manager:
         rows = []
         for s in statuses:
             if max_id is not None and s.id <= max_id: continue
-            at_created = datetime.datetime.strptime(s.created_at, "%a %b %d %H:%M:%S +0000 %Y")
-            at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
-            at_created_date = at_created.date()
-            row = {"id":s.id, "screen_name":s.user.screen_name, "name":s.user.name, "text":html.unescape(s.text), "at_created":strdt(at_created), "by_year_month":strpt(at_created_date)}
+            at_created = self.parse_status_time(s.created_at)
+            row = {"id":s.id, "screen_name":s.user.screen_name, "name":s.user.name, "text":html.unescape(s.text), "at_created":strdt(at_created), "by_year_month":strpt(at_created.date())}
             if hasattr(s.user, "profile_image_url"):
                 row["profile_image_url"] = s.user.profile_image_url_https
             if hasattr(s, "media") and type(s.media) is list:
@@ -90,16 +100,26 @@ class Manager:
         print("sql=", sql)
         tweets = []
         for row in bigquery.Client().query(sql).result():
-            tweets.append( {'at_created':strdt(row['at_created']), 'screen_name':row['screen_name'], 'text':row['text']} )
+            tweets.append({'at_created':strdt(row['at_created']), 'screen_name':row['screen_name'], 'text':row['text']})
         return tweets
 
     def get_trends(self):
         statuses = self.tw_api.GetTrendsWoeid(23424856)
         rows = []
         for s in statuses:
-            at_created = datetime.datetime.strptime(s.timestamp, "%Y-%m-%dT%H:%M:%SZ")
-            at_created = at_created + datetime.timedelta(hours=+9) # japanese timezone
-            rows.append({ "name":s.name, "volume":s.tweet_volume, "at_created":strdt(at_created) })
+            at_created = self.parse_trend_time(s.timestamp)
+            rows.append({"name":s.name, "volume":s.tweet_volume, "at_created":strdt(at_created)})
+        return rows
+
+    def get_search(self, keyword):
+        statues = self.tw_api.GetSearch(raw_query="q={}%20&result_type=recent&locale=ja&count=30".format(urllib.parse.quote(keyword)))
+        rows = []
+        for s in statues:
+            at_created = self.parse_status_time(s.created_at)
+            user_at_created = self.parse_status_time(s.user.created_at)
+            rows.append({"id":s.id, "keyword":keyword, "name":s.user.name, "screen_name":s.user.screen_name, "statuses_count":s.user.statuses_count,
+                "text":html.unescape(s.text), "at_created":strdt(at_created),
+                "user_description":html.unescape(s.user.description), "user_at_created":strdt(user_at_created)})
         return rows
 
     # 形態素解析する、いったんは使わない
