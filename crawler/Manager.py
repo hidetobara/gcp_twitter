@@ -3,7 +3,7 @@ import sys,os,json,datetime,re,html,urllib
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './private/twitter-261302-f4efec35fd83.json'
 from google.cloud import bigquery
 import twitter
-import MeCab
+#import MeCab
 import emoji
 from tool import strdt, strd, strpt
 
@@ -13,7 +13,6 @@ class Manager:
         self.bq_client = bigquery.Client()
         account = json.load(open('./private/hidetobara.json', 'r'))
         self.tw_api = twitter.Api(**account)
-        self.mecab = MeCab.Tagger ('-d /ipadic')
 
         self.re_rt = re.compile(r"^RT")
         self.re_url = re.compile(r"https?://[\w/:%#\$&\?\(\)~\.=\+\-]+")
@@ -21,6 +20,7 @@ class Manager:
         self.re_at = re.compile(r"@[^ ]+")
 
         self.opt = json.load(open(opt_path, 'r'))
+        self.mecab = None
 
     def remove_emoji(self, src_str):
         return ''.join(c for c in src_str if c not in emoji.UNICODE_EMOJI)
@@ -124,6 +124,9 @@ class Manager:
 
     # 形態素解析する、いったんは使わない
     def decompose(self, rows):
+        if self.mecab is None:
+            self.mecab = MeCab.Tagger ('-d /ipadic')
+
         items = []
         for r in rows:
             try:

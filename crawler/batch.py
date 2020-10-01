@@ -7,16 +7,18 @@ import Manager
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--trends', action='store_true')
-    parser.add_argument('--timeline', action='store_true')
+    parser.add_argument('--trends', default=0, type=int)
+    parser.add_argument('--timeline', default=0, type=int)
     args = parser.parse_args()
     m = Manager.Manager("./private/production.json")
     if args.trends:
         for row in m.get_trends():
-            for s in m.get_search(row['name']):
+            for i, s in enumerate(m.get_search(row['name'])):
+                if i >= args.trends: break
                 print(s)
     if args.timeline:
-        for row in m.get_timeline():
+        for i, row in enumerate(m.get_timeline()):
+            if i >= args.timeline: break
             print(row)
 
 

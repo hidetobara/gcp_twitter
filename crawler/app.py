@@ -53,11 +53,7 @@ def get_update():
 
     return jsonify({'result':'ok', 'rows':len(rows)})
 
-@app.route('/trends.json')
-def get_trends():
-    trends = m.get_trends()
-    m.insert_rows_trend(trends)
-
+def get_trend_samples(trends):
     count = 0
     for t in trends:
         if not t['name'].startswith('#'):
@@ -66,7 +62,13 @@ def get_trends():
         m.insert_rows_sample(ss)
         count += len(ss)
 
-    return jsonify({'result':'ok', 'samples':count})
+@app.route('/trends.json')
+def get_trends():
+    trends = m.get_trends()
+    m.insert_rows_trend(trends)
+    #get_trend_samples(trends)
+
+    return jsonify({'result':'ok', 'trends':len(trends)})
 
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0',port=8080)
