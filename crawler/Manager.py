@@ -3,12 +3,13 @@ import sys,os,json,datetime,re,html,urllib
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = './private/twitter-261302-f4efec35fd83.json'
 from google.cloud import bigquery
 import twitter
-#import MeCab
-import emoji
+#import MeCab, emoji
 from tool import strdt, strd, strpt
 
 
 class Manager:
+    TIME_TOKYO = 9
+
     def __init__(self, opt_path):
         self.bq_client = bigquery.Client()
         account = json.load(open('./private/hidetobara.json', 'r'))
@@ -21,9 +22,6 @@ class Manager:
 
         self.opt = json.load(open(opt_path, 'r'))
         self.mecab = None
-
-    def remove_emoji(self, src_str):
-        return ''.join(c for c in src_str if c not in emoji.UNICODE_EMOJI)
 
     def parse_status_time(self, txt):
         created = datetime.datetime.strptime(txt, "%a %b %d %H:%M:%S +0000 %Y")
@@ -50,7 +48,7 @@ class Manager:
         self.insert_rows(rows, self.opt["table"])
     def insert_rows_trend(self, rows):
         self.insert_rows(rows, self.opt["trend_table"])
-    def insert_rows_sample(self, rows):
+    def insert_rows_samples(self, rows):
         self.insert_rows(rows, self.opt["trend_sample_table"])
     def filter_for_bq_timeline(self, rows):
         items = []
@@ -111,21 +109,28 @@ class Manager:
             rows.append({"name":s.name, "volume":s.tweet_volume, "at_created":strdt(at_created)})
         return rows
 
-    def get_search(self, keyword):
-        statues = self.tw_api.GetSearch(raw_query="q={}%20&result_type=recent&locale=ja&count=30".format(urllib.parse.quote(keyword)))
+    def get_search(self, keyword, recent_hours=1):
+        now = datetime.datetime.now()
+        ignore_time = now + datetime.timedelta(hours=Manager.TIME_TOKYO-recent_hours)
+        statues = self.tw_api.GetSearch(raw_query="q={}%20&result_type=recent&lang=ja&count=100".format(urllib.parse.quote(keyword)))
         rows = []
         for s in statues:
             at_created = self.parse_status_time(s.created_at)
-            user_at_created = self.parse_status_time(s.user.created_at)
-            rows.append({"id":s.id, "keyword":keyword, "name":s.user.name, "screen_name":s.user.screen_name, "statuses_count":s.user.statuses_count,
-                "text":html.unescape(s.text), "at_created":strdt(at_created),
-                "user_description":html.unescape(s.user.description), "user_at_created":strdt(user_at_created)})
+            if at_created < ignore_time: continue
+            if s.text.startswith('RT '): continue
+            
+            rows.append({"id":s.id, "keyword": keyword, "screen_name":s.user.screen_name, "at_created":strdt(at_created), "retweet_count":s.retweet_count,
+                "text":html.unescape(s.text),
+                "at_crawled":strdt(now)})
         return rows
 
     # 形態素解析する、いったんは使わない
+    def remove_emoji(self, src_str):
+        return ''.join(c for c in src_str if c not in emoji.UNICODE_EMOJI)
+
     def decompose(self, rows):
         if self.mecab is None:
-            self.mecab = MeCab.Tagger ('-d /ipadic')
+            self.mecab = MeCab.Tagger('-d /ipadic')
 
         items = []
         for r in rows:

@@ -66,7 +66,9 @@ def get_trend_samples(trends):
 def get_trends():
     trends = m.get_trends()
     m.insert_rows_trend(trends)
-    #get_trend_samples(trends)
+
+    m.insert_rows_samples(m.get_search('#VRChat'))
+    m.insert_rows_samples(m.get_search('#Cluster'))
 
     return jsonify({'result':'ok', 'trends':len(trends)})
 

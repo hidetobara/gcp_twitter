@@ -4,7 +4,8 @@ docker run -it --rm -p 8080:8080 -v c:/obara/TwitterProject/crawler:/app gcr.io/
 
 # crawler deploy
 docker build -t gcr.io/twitter-261302/crawler .
-gcloud docker -- push gcr.io/twitter-261302/crawler
+# gcloud docker -- push gcr.io/twitter-261302/crawler # deprecated
+docker image push gcr.io/twitter-261302/crawler:latest
 
 # reference
 ## table
@@ -49,13 +50,13 @@ gcloud docker -- push gcr.io/twitter-261302/crawler
         "mode": "REQUIRED"
     },
     {
-        "name": "name",
+        "name": "screen_name",
         "type": "STRING",
         "mode": "REQUIRED"
     },
     {
-        "name": "screen_name",
-        "type": "STRING",
+        "name": "retweet_count",
+        "type": "INTEGER",
         "mode": "REQUIRED"
     },
     {
@@ -69,18 +70,8 @@ gcloud docker -- push gcr.io/twitter-261302/crawler
         "mode": "REQUIRED"
     },
     {
-        "name": "user_description",
-        "type": "STRING",
-        "mode": "NULLABLE"
-    },
-    {
-        "name": "user_at_created",
+        "name": "at_crawled",
         "type": "DATETIME",
-        "mode": "REQUIRED"
-    },
-    {
-        "name": "statuses_count",
-        "type": "INTEGER",
         "mode": "REQUIRED"
     }
 ]

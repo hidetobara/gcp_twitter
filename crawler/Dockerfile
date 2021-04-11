@@ -4,9 +4,9 @@ FROM python:3.8
 RUN apt update -y && apt upgrade -y \
 	&& apt -y install python3-pip vim curl supervisor less \
 	&& apt clean
-RUN pip3 install flask gunicorn
+RUN pip3 install flask gunicorn pytz
 RUN pip3 install python-twitter google-cloud-bigquery
-RUN pip3 install mecab-python3 emoji
+# RUN pip3 install mecab-python3 emoji
 
 ENV APP_HOME /app
 WORKDIR $APP_HOME
