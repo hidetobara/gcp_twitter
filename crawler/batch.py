@@ -23,7 +23,7 @@ if __name__ == "__main__":
             if i >= args.timeline: break
             print(i, row)
     if args.vrchat:
-        for i, row in enumerate(m.get_search('#VRChat')):
+        for i, row in enumerate(m.get_search(['#VRChat', '#VRC'])):
             print(i, row)
     if args.cluster:
         for i, row in enumerate(m.get_search('#Cluster')):

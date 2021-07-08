@@ -109,20 +109,25 @@ class Manager:
             rows.append({"name":s.name, "volume":s.tweet_volume, "at_created":strdt(at_created)})
         return rows
 
-    def get_search(self, keyword, recent_hours=1):
+    def get_search(self, keywords, recent_hours=1):
+        if type(keywords) is str:
+            keywords = [keywords]
         now = datetime.datetime.now()
         ignore_time = now + datetime.timedelta(hours=Manager.TIME_TOKYO-recent_hours)
-        statues = self.tw_api.GetSearch(raw_query="q={}%20&result_type=recent&lang=ja&count=100".format(urllib.parse.quote(keyword)))
-        rows = []
-        for s in statues:
-            at_created = self.parse_status_time(s.created_at)
-            if at_created < ignore_time: continue
-            if s.text.startswith('RT '): continue
-            
-            rows.append({"id":s.id, "keyword": keyword, "screen_name":s.user.screen_name, "at_created":strdt(at_created), "retweet_count":s.retweet_count,
-                "text":html.unescape(s.text),
-                "at_crawled":strdt(now)})
-        return rows
+        table = {}
+        for keyword in keywords:
+            statues = self.tw_api.GetSearch(raw_query="q={}%20&result_type=recent&lang=ja&count=100".format(urllib.parse.quote(keyword)))
+            rows = []
+            for s in statues:
+                at_created = self.parse_status_time(s.created_at)
+                if at_created < ignore_time: continue
+                if s.text.startswith('RT '): continue
+                if s.id in table: continue
+                
+                table[s.id] = {"id":s.id, "keyword": keyword, "screen_name":s.user.screen_name, "at_created":strdt(at_created), "retweet_count":s.retweet_count,
+                    "text":html.unescape(s.text),
+                    "at_crawled":strdt(now)}
+        return list(table.values())
 
     # 形態素解析する、いったんは使わない
     def remove_emoji(self, src_str):

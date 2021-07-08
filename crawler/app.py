@@ -53,22 +53,14 @@ def get_update():
 
     return jsonify({'result':'ok', 'rows':len(rows)})
 
-def get_trend_samples(trends):
-    count = 0
-    for t in trends:
-        if not t['name'].startswith('#'):
-            continue
-        ss = m.get_search(t['name'])
-        m.insert_rows_sample(ss)
-        count += len(ss)
-
 @app.route('/trends.json')
 def get_trends():
     trends = m.get_trends()
     m.insert_rows_trend(trends)
 
-    m.insert_rows_samples(m.get_search('#VRChat'))
+    m.insert_rows_samples(m.get_search(['#VRChat', '#VRC']))
     m.insert_rows_samples(m.get_search('#Cluster'))
+    m.insert_rows_samples(m.get_search('#VRC撮影の集い'))
 
     return jsonify({'result':'ok', 'trends':len(trends)})
 
